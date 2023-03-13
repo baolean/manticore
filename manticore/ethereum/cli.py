@@ -1,3 +1,4 @@
+import os
 from .detectors import (
     DetectInvalid,
     DetectIntegerOverflow,
@@ -145,6 +146,22 @@ def ethereum_main(args, logger):
             m.finalize(only_alive_states=args.only_alive_testcases, only_invalid_states=args.only_invalid_testcases)
         else:
             m.kill()
+
+        if consts.profile:
+            stats = profiler.get_profiling_data()
+            print(f"[*] Loaded profiling data.")
+
+            if stats is None:
+                print(f"[*] Failed to collect stats")
+                return
+
+            # Ordered processes by cumulative time 
+            sort = 'cumulative'
+            stats.sort_stats(sort)
+
+            profile_path = os.path.join(m.workspace, "performance.prof")
+            with open(profile_path, "wb") as f:
+                profiler.save_profiling_data(f)
 
         for detector in list(m.detectors):
             m.unregister_detector(detector)
