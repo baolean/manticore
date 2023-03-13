@@ -1744,7 +1744,7 @@ class ManticoreEVM(ManticoreBase):
         :param procs: force the number of local processes to use in the reporting
         :param bool only_alive_states: if True, killed states (revert/throw/txerror) do not generate testscases
         generation. Uses global configuration constant by default
-        :param bool only_invalid_states: if True, only killed states (revert/throw/txerror) generate testscases.
+        :param bool only_invalid_states: if True, only killed states (throw) generate testscases.
         Uses global configuration constant by default
         """
         if procs is None:
