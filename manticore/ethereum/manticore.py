@@ -1735,15 +1735,17 @@ class ManticoreEVM(ManticoreBase):
             filestream.write(ln)
 
     @ManticoreBase.at_not_running
-    def finalize(self, procs=None, only_alive_states=False):
+    def finalize(self, procs=None, only_alive_states=False, only_invalid_states=False):
         """
         Terminate and generate testcases for all currently alive states (contract
         states that cleanly executed to a STOP or RETURN in the last symbolic
-        transaction).
+        transaction) or all invalid states (that ended with an INVALID/THROW instruction).
 
         :param procs: force the number of local processes to use in the reporting
         :param bool only_alive_states: if True, killed states (revert/throw/txerror) do not generate testscases
         generation. Uses global configuration constant by default
+        :param bool only_invalid_states: if True, only killed states (revert/throw/txerror) generate testscases.
+        Uses global configuration constant by default
         """
         if procs is None:
             procs = config.get_group("core").procs
@@ -1756,6 +1758,9 @@ class ManticoreEVM(ManticoreBase):
                 last_tx = st.platform.last_transaction
                 # Do not generate killed state if only_alive_states is True
                 if only_alive_states and last_tx.result in {"REVERT", "THROW", "TXERROR"}:
+                    return
+                # Do not generate reverted or alive states if only_invalid_states is True
+                if only_invalid_states and not last_tx.result == "THROW":
                     return
                 logger.debug("Generating testcase for state_id %d", state_id)
                 message = last_tx.result if last_tx else "NO STATE RESULT (?)"

@@ -228,6 +228,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     eth_flags.add_argument(
+        "--only-invalid-testcases",
+        action="store_true",
+        help="Generate testcases only for invalid/throwing states when analysis finishes",
+    )
+
+    eth_flags.add_argument(
         "--thorough-mode",
         action="store_true",
         help="Configure Manticore for more exhaustive exploration. Evaluate gas, generate testcases for dead states, "
