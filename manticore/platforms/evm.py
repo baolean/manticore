@@ -108,6 +108,11 @@ consts.add(
     description="Do not try to solve symbolic balances",
 )
 
+consts.add(
+    "symbolic_storage",
+    default=False,
+    description="SLOAD returns symbolic values from uninitialized storage slots",
+)
 
 # Auxiliary constants and functions
 TT256 = 2**256
@@ -1993,7 +1998,8 @@ class EVM(Eventful):
 
         # Get the storage from the snapshot took before this call
         try:
-            original_value = self.world._callstack[-1][-2].get(offset, 0)
+            default = None if consts.symbolic_storage else 0
+            original_value = self.world._callstack[-1][-2].get(offset, default)
         except IndexError:
             original_value = 0
 
@@ -2851,7 +2857,8 @@ class EVMWorld(Platform):
         :return: the value
         :rtype: int or BitVec
         """
-        value = self._world_state[storage_address]["storage"].get(offset, 0)
+        default = None if consts.symbolic_storage else 0
+        value = self._world_state[storage_address]["storage"].get(offset, default)
         return simplify(value)
 
     def set_storage_data(self, storage_address, offset, value):
@@ -3147,12 +3154,15 @@ class EVMWorld(Platform):
 
         if storage is None:
             # Uninitialized values in a storage are 0 by spec
+            # unless a symbolic_storage flag is provided
+            storage_default = None if consts.symbolic_storage else 0   
             storage = self.constraints.new_array(
                 index_bits=256,
                 value_bits=256,
                 name=f"STORAGE_{address:x}",
                 avoid_collisions=True,
-                default=0,
+                # default=0,
+                default=storage_default,
             )
         else:
             if isinstance(storage, ArrayProxy):
