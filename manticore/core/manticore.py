@@ -1251,7 +1251,10 @@ class ManticoreBase(Eventful):
 
         with self._output.save_stream("global.solver_stats") as f:
             for s, n in sorted(SOLVER_STATS.items()):
-                f.write("%s: %d\n" % (s, n))
+                if s == "time":
+                    f.write("%s: %f\n" % (s, n))
+                else:
+                    f.write("%s: %d\n" % (s, n))
 
         if SOLVER_STATS["timeout"] > 0 or SOLVER_STATS["unknown"] > 0:
             logger.warning(
@@ -1266,6 +1269,7 @@ class ManticoreBase(Eventful):
             if "time_started" in context:
                 time_elapsed = time_ended - context["time_started"]
                 logger.info("Total time: %s", time_elapsed)
+                logger.info("Solver time: %s", SOLVER_STATS["time"])
                 context["time_ended"] = time_ended
                 context["time_elapsed"] = time_elapsed
             else:

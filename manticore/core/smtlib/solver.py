@@ -63,7 +63,7 @@ RE_OBJECTIVES_EXPR_VALUE = re.compile(
 )
 RE_MIN_MAX_OBJECTIVE_EXPR_VALUE = re.compile(r"(?P<expr>.*?)\s+\|->\s+(?P<value>.*)", re.DOTALL)
 
-SOLVER_STATS = {"unknown": 0, "timeout": 0}
+SOLVER_STATS = {"unknown": 0, "timeout": 0, "time": 0.0}
 
 
 class SolverType(config.ConfigEnum):
@@ -407,12 +407,16 @@ class SMTLIBSolver(Solver):
         self._smtlib.send("(check-sat)")
         status = self._smtlib.recv()
         assert status is not None
-        logger.debug("Check took %s seconds (%s)", time.time() - start, status)
+        check_time = time.time() - start
+        logger.debug("Check took %s seconds (%s)", check_time, status)
         if "ALARM TRIGGERED" in status:
             return False
 
         if status not in ("sat", "unsat", "unknown"):
             raise SolverError(status)
+
+        SOLVER_STATS["time"] += check_time
+
         if consts.defaultunsat:
             if status == "unknown":
                 logger.info("Found an unknown core, probably a solver timeout")
