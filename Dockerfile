@@ -7,19 +7,44 @@ LABEL dockerfile_maintenance=trailofbits
 
 ENV LANG C.UTF-8
 
-RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install python3 python3-dev python3-pip git wget
+RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install git \
+ wget vim software-properties-common tzdata curl cmake unzip
 
-# Install solc 0.4.25 and validate it
-RUN wget https://github.com/ethereum/solidity/releases/download/v0.4.25/solc-static-linux \
- && chmod +x solc-static-linux \
- && mv solc-static-linux /usr/bin/solc
+RUN add-apt-repository ppa:deadsnakes/ppa \
+ && apt-get -y install python3.7 python3.7-dev python3-pip python3.7-distutils
 
-# If this fails, the solc-static-linux binary has changed while it should not.
-RUN [ "c9b268750506b88fe71371100050e9dd1e7edcf8f69da34d1cd09557ecb24580  /usr/bin/solc" = "$(sha256sum /usr/bin/solc)" ]
-
-RUN python3 -m pip install -U pip
+RUN python3.7 -m pip install -U pip \
+  && pip install solc-select \
+  && solc-select install 0.7.6 \
+  && solc-select install 0.8.13 \
+  && solc-select use 0.7.6
 
 ADD . /manticore
-RUN cd manticore && python3 -m pip install .[native]
+RUN cd manticore && python3.7 -m pip install .[native]
+
+# Install smt-solvers (Z3 is already installed as a Python dependency)
+# (1) yices2
+RUN wget https://yices.csl.sri.com/releases/2.6.4/yices-2.6.4-x86_64-pc-linux-gnu.tar.gz \
+  && tar -xzvf yices-2.6.4-x86_64-pc-linux-gnu.tar.gz \
+  && rm yices-2.6.4-x86_64-pc-linux-gnu.tar.gz \
+  && cd yices-2.6.4 \
+  && ./install-yices
+
+# (2) cvc4
+RUN mkdir cvc4-solver && cd cvc4-solver
+RUN cd cvc4-solver && wget https://github.com/CVC4/CVC4/releases/download/1.8/cvc4-1.8-x86_64-linux-opt \
+  && mv cvc4-1.8-x86_64-linux-opt cvc4 \
+  && chmod +x cvc4
+
+ENV PATH=/cvc4-solver:$PATH
+
+# (3) boolector
+RUN git clone https://github.com/boolector/boolector \
+  && cd boolector \
+  && ./contrib/setup-lingeling.sh \
+  && ./contrib/setup-btor2tools.sh \
+  && ./configure.sh && cd build && make
+
+ENV PATH=/boolector/build/bin:$PATH
 
 CMD ["/bin/bash"]
