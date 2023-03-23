@@ -16,7 +16,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 RUN python3.7 -m pip install -U pip \
   && pip install solc-select \
   && solc-select install 0.7.6 \
-  && solc-select install 0.8.13 \
+  && solc-select install 0.8.17 \
   && solc-select use 0.7.6
 
 ADD . /manticore
